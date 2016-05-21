@@ -26,7 +26,3 @@ class Delay(Model):
 
     class Meta:
         database = db
-
-db.connect()
-db.create_tables([Person, Delay])
-db.close()
