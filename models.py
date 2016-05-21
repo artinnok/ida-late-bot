@@ -8,6 +8,9 @@ class Person(Model):
         verbose_name='Ник пользователя в Telegram'
     )
 
+    class Meta:
+        database = db
+
 
 class Delay(Model):
     time = IntegerField(
@@ -20,3 +23,10 @@ class Delay(Model):
         Person,
         related_name='delays'
     )
+
+    class Meta:
+        database = db
+
+db.connect()
+db.create_tables([Person, Delay])
+db.close()
