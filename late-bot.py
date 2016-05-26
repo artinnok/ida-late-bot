@@ -3,7 +3,8 @@ import logging
 
 import os
 import re
-from orm.models import db, Delay, Person
+import telegram
+from orm.models import db, Delay, Person, fn
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 
 # const
@@ -22,10 +23,10 @@ logger = logging.getLogger(__name__)
 
 
 # database connect and close
-def db_connect_close(fn):
+def db_connect_close(func):
     def wrap(*args, **kwargs):
         db.connect()
-        fn(*args, **kwargs)
+        func(*args, **kwargs)
         db.close()
     return wrap
 
@@ -79,7 +80,10 @@ def main_handler(bot, update):
     text = update.message.text
     chat_id = update.message.chat_id
 
-    if user_state == MENU and text[0] == '/':
+    if user_state == MENU and re.search('([ао]п[ао][зс]д|задерж)(?iu)', text):
+        bot.sendMessage(chat_id, 'Используйте команду /late')
+
+    elif user_state == MENU and text[0] == '/':
         bot.sendMessage(chat_id, 'Введите время задержки в минутах')
         state[username] = ENTER_DELAY
 
@@ -102,6 +106,25 @@ def main_handler(bot, update):
                                      'остальных символов')
 
 
+# show users delay stats
+@db_connect_close
+def show_stats(bot, update):
+    chat_id = update.message.chat_id
+    for person in Person.select():
+        bot.sendMessage(
+            chat_id,
+            '{} {} @{}: \n'
+            '*количество опозданий* - {}, \n'
+            '*суммарное время опозданий* - {} минут'.format(
+                person.first_name,
+                person.last_name,
+                person.username,
+                person.delays.count(),
+                person.delays.aggregate(fn.Sum(Delay.minute))
+            ),
+            parse_mode='Markdown')
+
+
 # debug function
 def get_upd(bot, update):
     print(update.message)
@@ -116,6 +139,7 @@ def main():
     dp = updater.dispatcher
 
     dp.add_handler(CommandHandler("late", main_handler))
+    dp.add_handler(CommandHandler("stats", show_stats))
     dp.add_handler(MessageHandler([Filters.text], main_handler))
 
     dp.add_error_handler(error)
