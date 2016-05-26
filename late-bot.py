@@ -111,18 +111,19 @@ def main_handler(bot, update):
 def show_stats(bot, update):
     chat_id = update.message.chat_id
     for person in Person.select():
-        bot.sendMessage(
-            chat_id,
-            '{} {} @{}: \n'
-            '*количество опозданий* - {}, \n'
-            '*суммарное время опозданий* - {} минут'.format(
-                person.first_name,
-                person.last_name,
-                person.username,
-                person.delays.count(),
-                person.delays.aggregate(fn.Sum(Delay.minute))
-            ),
-            parse_mode='Markdown')
+        if person.delays.count() != 0:
+            bot.sendMessage(
+                chat_id,
+                '{} {} @{}: \n'
+                '*количество опозданий* - {}, \n'
+                '*суммарное время опозданий* - {} минут'.format(
+                    person.first_name,
+                    person.last_name,
+                    person.username,
+                    person.delays.count(),
+                    person.delays.aggregate(fn.Sum(Delay.minute))
+                ),
+                parse_mode='Markdown')
 
 
 # debug function
