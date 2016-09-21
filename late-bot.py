@@ -112,7 +112,7 @@ def sorry_guys(bot, update, args):
         bot.sendMessage(
             chat_id,
             'Опоздание @{} на {} минут зарегистрировано!'.format(
-                person.username,
+                person.user_id,
                 delay.minute
             )
         )
