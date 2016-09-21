@@ -9,6 +9,7 @@ from orm.models import db, Delay, Person, fn
 
 # const
 API_TOKEN = os.environ['API_TOKEN']
+ADMIN_IDS = [845871, 948469]
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -94,10 +95,34 @@ def save_delay(person, hours, minutes):
 
 
 @db_connect_close
+def sorry_guys(bot, update, args):
+    chat_id = update.message.chat_id
+    admin_id = update.message.to_dict('from').get('id')
+    user_id = args[0]
+    minutes = args[1]
+    if admin_id in ADMIN_IDS:
+        person = Person.get(user_id=user_id)
+        delay = Delay.create(minute=minutes, person=person)
+        bot.sendMessage(
+            chat_id,
+            'Опоздание {} на {} минут зарегистрировано!'.format(
+                person.username,
+                delay.minute
+            )
+        )
+    else:
+        bot.sendMessage(
+            chat_id,
+            'Недостаточно прав :('
+        )
+
+
+@db_connect_close
 def main_handler(bot, update):
     person = get_or_create_person(update.message.to_dict().get('from'))
     text = update.message.text
     chat_id = update.message.chat_id
+    debug_update(bot, update)
     if re.search('([ао]п[ао][зс]д|задерж)(?iu)', text):
         hours = extract_hours(text)
         minutes = extract_minutes(text)
@@ -117,12 +142,13 @@ def show_stats(bot, update):
         if person.delays.count() != 0:
             bot.sendMessage(
                 chat_id,
-                '{} {} @{}: \n'
+                '{} {} @{} @{}: \n'
                 '*количество опозданий* - {}, \n'
                 '*суммарное время опозданий* - {} минут'.format(
                     person.first_name,
                     person.last_name,
                     person.username,
+                    person.user_id,
                     person.delays.count(),
                     person.delays.aggregate(fn.Sum(Delay.minute))
                 ),
@@ -144,6 +170,7 @@ def main():
     dp = updater.dispatcher
 
     dp.add_handler(CommandHandler("stats", show_stats))
+    dp.add_handler(CommandHandler("sorry_guys", sorry_guys, pass_args=True))
     dp.add_handler(MessageHandler([Filters.text], main_handler))
     dp.add_error_handler(error)
 
