@@ -96,25 +96,28 @@ def save_delay(person, hours, minutes):
 
 @db_connect_close
 def sorry_guys(bot, update, args):
+    """
+    Saves delay of person by admin
+    """
     chat_id = update.message.chat_id
-    admin_id = update.message.to_dict('from').get('id')
-    user_id = args[0]
-    minutes = args[1]
+    admin_id = update.message.to_dict().get('from').get('id')
+    try:
+        user_id = args[0]
+        minutes = args[1]
+    except IndexError:
+        bot.sendMessage(chat_id, 'Ошибка в команде')
     if admin_id in ADMIN_IDS:
         person = Person.get(user_id=user_id)
         delay = Delay.create(minute=minutes, person=person)
         bot.sendMessage(
             chat_id,
-            'Опоздание {} на {} минут зарегистрировано!'.format(
+            'Опоздание @{} на {} минут зарегистрировано!'.format(
                 person.username,
                 delay.minute
             )
         )
     else:
-        bot.sendMessage(
-            chat_id,
-            'Недостаточно прав :('
-        )
+        bot.sendMessage(chat_id, 'Недостаточно прав :(')
 
 
 @db_connect_close
