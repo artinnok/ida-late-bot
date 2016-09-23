@@ -125,7 +125,6 @@ def main_handler(bot, update):
     person = get_or_create_person(update.message.to_dict().get('from'))
     text = update.message.text
     chat_id = update.message.chat_id
-    debug_update(bot, update)
     if re.search('([ао]п[ао][зс]д|задерж)(?iu)', text):
         hours = extract_hours(text)
         minutes = extract_minutes(text)
